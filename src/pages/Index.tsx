@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import { FileUploadZone } from '@/components/FileUploadZone';
+import { ProcessingControls } from '@/components/ProcessingControls';
+import { ComparisonSlider } from '@/components/ComparisonSlider';
+import { HistoryGallery } from '@/components/HistoryGallery';
 
 type ProcessType = 'enhance' | 'restore' | 'filter' | null;
 type FilterType = 'vintage' | 'bw' | 'vivid' | 'soft' | null;
@@ -24,7 +25,6 @@ const Index = () => {
   const [processType, setProcessType] = useState<ProcessType>(null);
   const [filterType, setFilterType] = useState<FilterType>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [sliderPosition, setSliderPosition] = useState(50);
   const [history, setHistory] = useState<ProcessedImage[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -53,7 +53,6 @@ const Index = () => {
     setIsProcessing(true);
     setProgress(0);
     
-    // Simulate progress
     const progressInterval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 90) return prev;
@@ -151,6 +150,14 @@ const Index = () => {
     document.body.removeChild(link);
   };
 
+  const handleReset = () => {
+    setPreviewUrl(null);
+    setProcessedUrl(null);
+    setProcessType(null);
+    setFilterType(null);
+    setSelectedFile(null);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/20 to-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -186,334 +193,57 @@ const Index = () => {
 
           <TabsContent value="upload" className="space-y-6 animate-fade-in">
             {!previewUrl ? (
-              <Card
-                className={`p-12 border-2 border-dashed transition-all duration-300 hover-scale cursor-pointer ${
-                  isDragging ? 'border-primary bg-primary/5 scale-105' : 'border-border'
-                }`}
+              <FileUploadZone
+                isDragging={isDragging}
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
                 onClick={() => document.getElementById('file-input')?.click()}
-              >
-                <div className="text-center space-y-4">
-                  <div className="mx-auto w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Icon name="Upload" size={40} className="text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">Загрузите фото</h3>
-                    <p className="text-muted-foreground">
-                      Перетащите изображение или нажмите для выбора
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Поддерживаются JPG, PNG, WEBP до 10MB
-                    </p>
-                  </div>
-                  <input
-                    id="file-input"
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
-                  />
-                </div>
-              </Card>
+                onFileSelect={handleFileSelect}
+              />
             ) : (
               <div className="space-y-6 animate-scale-in">
-                <Card className="p-6 space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Icon name="Sliders" size={20} />
-                      Выберите тип обработки
-                    </h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setPreviewUrl(null);
-                        setProcessedUrl(null);
-                        setSelectedFile(null);
-                        setProcessType(null);
-                      }}
-                    >
-                      Сбросить
-                    </Button>
-                  </div>
+                <ProcessingControls
+                  processType={processType}
+                  filterType={filterType}
+                  isProcessing={isProcessing}
+                  progress={progress}
+                  onProcessTypeChange={setProcessType}
+                  onFilterChange={applyFilter}
+                  onProcess={handleProcess}
+                  onReset={handleReset}
+                  getProcessLabel={getProcessLabel}
+                />
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card
-                      className={`p-6 cursor-pointer transition-all hover-scale ${
-                        processType === 'enhance' ? 'ring-2 ring-primary bg-primary/5' : ''
-                      }`}
-                      onClick={() => setProcessType('enhance')}
-                    >
-                      <div className="text-center space-y-3">
-                        <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Icon name="Sparkles" size={28} className="text-primary" />
-                        </div>
-                        <h4 className="font-semibold">Улучшение</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Повышение четкости и детализации
-                        </p>
-                      </div>
-                    </Card>
-
-                    <Card
-                      className={`p-6 cursor-pointer transition-all hover-scale ${
-                        processType === 'restore' ? 'ring-2 ring-primary bg-primary/5' : ''
-                      }`}
-                      onClick={() => setProcessType('restore')}
-                    >
-                      <div className="text-center space-y-3">
-                        <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Icon name="ImageIcon" size={28} className="text-primary" />
-                        </div>
-                        <h4 className="font-semibold">Восстановление</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Удаление шумов и дефектов
-                        </p>
-                      </div>
-                    </Card>
-
-                    <Card
-                      className={`p-6 cursor-pointer transition-all hover-scale ${
-                        processType === 'filter' ? 'ring-2 ring-primary bg-primary/5' : ''
-                      }`}
-                      onClick={() => setProcessType('filter')}
-                    >
-                      <div className="text-center space-y-3">
-                        <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Icon name="Sliders" size={28} className="text-primary" />
-                        </div>
-                        <h4 className="font-semibold">Фильтры</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Художественная обработка
-                        </p>
-                      </div>
-                    </Card>
-                  </div>
-
-                  {processType === 'filter' && (
-                    <div className="space-y-3 animate-slide-up">
-                      <h4 className="text-sm font-medium">Выберите фильтр</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {(['vintage', 'bw', 'vivid', 'soft'] as FilterType[]).map((filter) => (
-                          <Button
-                            key={filter}
-                            variant={filterType === filter ? 'default' : 'outline'}
-                            onClick={() => applyFilter(filter)}
-                            className="w-full"
-                          >
-                            {getProcessLabel(filter!)}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {isProcessing && (
-                    <div className="space-y-2 animate-fade-in">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Обработка нейросетью...</span>
-                        <span className="font-medium">{Math.round(progress)}%</span>
-                      </div>
-                      <div className="h-2 bg-accent rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-500 ease-out"
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <Button
-                    size="lg"
-                    className="w-full"
-                    disabled={!processType || isProcessing}
-                    onClick={handleProcess}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Icon name="Sparkles" size={20} className="animate-spin" />
-                        Обработка...
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="Sparkles" size={20} />
-                        Обработать фото
-                      </>
-                    )}
-                  </Button>
-                </Card>
-
-                {processedUrl ? (
-                  <Card className="p-6 space-y-4 animate-scale-in">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Результат</h3>
-                      <Badge variant="secondary" className="gap-1">
-                        <Icon name="Sparkles" size={14} />
-                        {getProcessLabel(processType!)}
-                      </Badge>
-                    </div>
-
-                    <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
-                      <div
-                        className="absolute inset-0 bg-cover bg-center"
-                        style={{ backgroundImage: `url(${previewUrl})` }}
-                      />
-                      <div
-                        className="absolute inset-0 bg-cover bg-center transition-all duration-300"
-                        style={{
-                          backgroundImage: `url(${processedUrl})`,
-                          clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`
-                        }}
-                      />
-                      <div
-                        className="absolute top-0 bottom-0 w-1 bg-white shadow-lg cursor-ew-resize"
-                        style={{ left: `${sliderPosition}%` }}
-                        onMouseDown={(e) => {
-                          const onMouseMove = (moveEvent: MouseEvent) => {
-                            const rect = e.currentTarget.parentElement?.getBoundingClientRect();
-                            if (rect) {
-                              const percent = ((moveEvent.clientX - rect.left) / rect.width) * 100;
-                              setSliderPosition(Math.max(0, Math.min(100, percent)));
-                            }
-                          };
-                          const onMouseUp = () => {
-                            document.removeEventListener('mousemove', onMouseMove);
-                            document.removeEventListener('mouseup', onMouseUp);
-                          };
-                          document.addEventListener('mousemove', onMouseMove);
-                          document.addEventListener('mouseup', onMouseUp);
-                        }}
-                      >
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
-                          <Icon name="ChevronsLeftRight" size={16} className="text-primary" />
-                        </div>
-                      </div>
-
-                      <div className="absolute top-4 left-4">
-                        <Badge variant="secondary">До</Badge>
-                      </div>
-                      <div className="absolute top-4 right-4">
-                        <Badge variant="default">После</Badge>
-                      </div>
-                    </div>
-
-                    <Button 
-                      size="lg" 
-                      className="w-full" 
-                      variant="outline"
-                      onClick={() => handleDownload(processedUrl, `photo-ai-${processType}-${Date.now()}.jpg`)}
-                    >
-                      <Icon name="Download" size={20} />
-                      Скачать результат
-                    </Button>
-                  </Card>
-                ) : (
-                  <Card className="p-6">
-                    <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                      <img
-                        src={previewUrl}
-                        alt="Preview"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                  </Card>
-                )}
+                <ComparisonSlider
+                  previewUrl={previewUrl}
+                  processedUrl={processedUrl}
+                  processType={processType || ''}
+                  onDownload={handleDownload}
+                  getProcessLabel={getProcessLabel}
+                />
               </div>
             )}
           </TabsContent>
 
           <TabsContent value="gallery" className="animate-fade-in">
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Галерея обработанных фото</h3>
-              {history.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Icon name="ImageIcon" size={48} className="mx-auto mb-4 opacity-50" />
-                  <p>Обработанные изображения появятся здесь</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {history.map((item) => (
-                    <Card key={item.id} className="overflow-hidden hover-scale cursor-pointer">
-                      <div className="aspect-video bg-muted">
-                        <img
-                          src={item.processed}
-                          alt="Processed"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="p-4 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Badge variant="secondary">
-                            {getProcessLabel(item.processType)}
-                          </Badge>
-                          <Button 
-                            size="icon" 
-                            variant="ghost"
-                            onClick={() => handleDownload(item.processed, `photo-ai-${item.processType}-${item.id}.jpg`)}
-                          >
-                            <Icon name="Download" size={16} />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </Card>
+            <div className="text-center p-12">
+              <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Icon name="ImageIcon" size={32} className="text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Галерея скоро появится</h3>
+              <p className="text-muted-foreground">
+                Здесь будут отображаться примеры обработанных фотографий
+              </p>
+            </div>
           </TabsContent>
 
           <TabsContent value="history" className="animate-fade-in">
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">История обработки</h3>
-              {history.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Icon name="History" size={48} className="mx-auto mb-4 opacity-50" />
-                  <p>История обработки пуста</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {history.map((item) => (
-                    <Card key={item.id} className="p-4 hover-scale cursor-pointer">
-                      <div className="flex gap-4">
-                        <div className="flex-shrink-0 w-24 h-24 bg-muted rounded-lg overflow-hidden">
-                          <img
-                            src={item.processed}
-                            alt="Thumbnail"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-grow space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary">
-                              {getProcessLabel(item.processType)}
-                            </Badge>
-                            {item.filterType && (
-                              <Badge variant="outline">
-                                {getProcessLabel(item.filterType)}
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {item.timestamp.toLocaleString('ru-RU')}
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0 flex items-center gap-2">
-                          <Button 
-                            size="icon" 
-                            variant="ghost"
-                            onClick={() => handleDownload(item.processed, `photo-ai-${item.processType}-${item.id}.jpg`)}
-                          >
-                            <Icon name="Download" size={18} />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </Card>
+            <HistoryGallery
+              history={history}
+              onDownload={handleDownload}
+              getProcessLabel={getProcessLabel}
+            />
           </TabsContent>
         </Tabs>
       </div>

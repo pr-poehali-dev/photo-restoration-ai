@@ -27,6 +27,7 @@ const Index = () => {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [history, setHistory] = useState<ProcessedImage[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const handleFileSelect = (file: File) => {
     if (file && file.type.startsWith('image/')) {
@@ -50,6 +51,15 @@ const Index = () => {
     if (!previewUrl || !processType || !selectedFile) return;
     
     setIsProcessing(true);
+    setProgress(0);
+    
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 90) return prev;
+        return prev + Math.random() * 15;
+      });
+    }, 500);
     
     try {
       const reader = new FileReader();
@@ -94,14 +104,19 @@ const Index = () => {
           throw new Error(data.error || 'Processing failed');
         }
         
+        clearInterval(progressInterval);
+        setProgress(100);
         setIsProcessing(false);
       };
       
       reader.onerror = () => {
+        clearInterval(progressInterval);
+        setProgress(0);
         setIsProcessing(false);
         alert('Ошибка чтения файла');
       };
     } catch (error) {
+      setProgress(0);
       setIsProcessing(false);
       alert(`Ошибка обработки: ${error}`);
     }
@@ -291,6 +306,21 @@ const Index = () => {
                             {getProcessLabel(filter!)}
                           </Button>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {isProcessing && (
+                    <div className="space-y-2 animate-fade-in">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Обработка нейросетью...</span>
+                        <span className="font-medium">{Math.round(progress)}%</span>
+                      </div>
+                      <div className="h-2 bg-accent rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-500 ease-out"
+                          style={{ width: `${progress}%` }}
+                        />
                       </div>
                     </div>
                   )}

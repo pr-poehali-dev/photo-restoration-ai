@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS request for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": "",
+      "bodyMatcher": "exact"
+    },
+    {
+      "name": "POST without image data returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "processType": "enhance"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "Image data required"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

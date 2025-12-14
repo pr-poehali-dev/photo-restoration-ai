@@ -46,26 +46,65 @@ const Index = () => {
     handleFileSelect(file);
   };
 
-  const handleProcess = () => {
-    if (!previewUrl || !processType) return;
+  const handleProcess = async () => {
+    if (!previewUrl || !processType || !selectedFile) return;
     
     setIsProcessing(true);
     
-    setTimeout(() => {
-      setProcessedUrl(previewUrl);
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(selectedFile);
       
-      const newItem: ProcessedImage = {
-        id: Date.now().toString(),
-        original: previewUrl,
-        processed: previewUrl,
-        processType: processType,
-        timestamp: new Date(),
-        filterType: filterType || undefined
+      reader.onload = async () => {
+        const base64String = (reader.result as string).split(',')[1];
+        
+        const response = await fetch('https://functions.poehali.dev/60b84525-0d8c-4d60-a5aa-a63e14737969', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image: base64String,
+            processType: processType,
+            filterType: filterType
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Processing failed');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.processedImage) {
+          const processedImageUrl = `data:image/jpeg;base64,${data.processedImage}`;
+          setProcessedUrl(processedImageUrl);
+          
+          const newItem: ProcessedImage = {
+            id: Date.now().toString(),
+            original: previewUrl,
+            processed: processedImageUrl,
+            processType: processType,
+            timestamp: new Date(),
+            filterType: filterType || undefined
+          };
+          
+          setHistory(prev => [newItem, ...prev]);
+        } else {
+          throw new Error(data.error || 'Processing failed');
+        }
+        
+        setIsProcessing(false);
       };
       
-      setHistory(prev => [newItem, ...prev]);
+      reader.onerror = () => {
+        setIsProcessing(false);
+        alert('Ошибка чтения файла');
+      };
+    } catch (error) {
       setIsProcessing(false);
-    }, 2000);
+      alert(`Ошибка обработки: ${error}`);
+    }
   };
 
   const applyFilter = (filter: FilterType) => {

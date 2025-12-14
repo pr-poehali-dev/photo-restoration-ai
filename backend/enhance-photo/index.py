@@ -107,8 +107,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         prediction_id = prediction['id']
         prediction_url = prediction['urls']['get']
         
-        max_attempts = 60
+        max_attempts = 12
         attempt = 0
+        
+        import time
         
         while attempt < max_attempts:
             status_response = requests.get(
@@ -127,7 +129,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 output_url = result.get('output')
                 
                 if output_url:
-                    image_response = requests.get(output_url, timeout=30)
+                    image_response = requests.get(output_url, timeout=15)
                     if image_response.status_code == 200:
                         processed_base64 = base64.b64encode(image_response.content).decode('utf-8')
                         
@@ -159,7 +161,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             attempt += 1
-            import time
             time.sleep(2)
         
         return {

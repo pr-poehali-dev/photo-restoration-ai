@@ -88,6 +88,15 @@ const Index = () => {
     return labels[type] || type;
   };
 
+  const handleDownload = (imageUrl: string, fileName?: string) => {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = fileName || `photo-ai-${Date.now()}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/20 to-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -321,7 +330,12 @@ const Index = () => {
                       </div>
                     </div>
 
-                    <Button size="lg" className="w-full" variant="outline">
+                    <Button 
+                      size="lg" 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={() => handleDownload(processedUrl, `photo-ai-${processType}-${Date.now()}.jpg`)}
+                    >
                       <Icon name="Download" size={20} />
                       Скачать результат
                     </Button>
@@ -365,7 +379,11 @@ const Index = () => {
                           <Badge variant="secondary">
                             {getProcessLabel(item.processType)}
                           </Badge>
-                          <Button size="icon" variant="ghost">
+                          <Button 
+                            size="icon" 
+                            variant="ghost"
+                            onClick={() => handleDownload(item.processed, `photo-ai-${item.processType}-${item.id}.jpg`)}
+                          >
                             <Icon name="Download" size={16} />
                           </Button>
                         </div>
@@ -413,7 +431,11 @@ const Index = () => {
                           </p>
                         </div>
                         <div className="flex-shrink-0 flex items-center gap-2">
-                          <Button size="icon" variant="ghost">
+                          <Button 
+                            size="icon" 
+                            variant="ghost"
+                            onClick={() => handleDownload(item.processed, `photo-ai-${item.processType}-${item.id}.jpg`)}
+                          >
                             <Icon name="Download" size={18} />
                           </Button>
                         </div>

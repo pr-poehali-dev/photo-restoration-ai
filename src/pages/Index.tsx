@@ -65,47 +65,61 @@ const Index = () => {
       reader.readAsDataURL(selectedFile);
       
       reader.onload = async () => {
-        const base64String = (reader.result as string).split(',')[1];
-        
-        const response = await fetch('https://functions.poehali.dev/60b84525-0d8c-4d60-a5aa-a63e14737969', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            image: base64String,
-            processType: processType,
-            filterType: filterType
-          })
-        });
-        
-        if (!response.ok) {
-          throw new Error('Processing failed');
-        }
-        
-        const data = await response.json();
-        
-        if (data.success && data.processedImage) {
-          const processedImageUrl = `data:image/jpeg;base64,${data.processedImage}`;
-          setProcessedUrl(processedImageUrl);
+        try {
+          const base64String = (reader.result as string).split(',')[1];
           
-          const newItem: ProcessedImage = {
-            id: Date.now().toString(),
-            original: previewUrl,
-            processed: processedImageUrl,
-            processType: processType,
-            timestamp: new Date(),
-            filterType: filterType || undefined
-          };
+          const response = await fetch('https://functions.poehali.dev/60b84525-0d8c-4d60-a5aa-a63e14737969', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              image: base64String,
+              processType: processType,
+              filterType: filterType
+            })
+          });
           
-          setHistory(prev => [newItem, ...prev]);
-        } else {
-          throw new Error(data.error || 'Processing failed');
+          if (!response.ok) {
+            clearInterval(progressInterval);
+            setProgress(0);
+            setIsProcessing(false);
+            alert(`Ошибка сервера: ${response.status}. Попробуйте загрузить фото меньшего размера или повторите попытку позже.`);
+            return;
+          }
+          
+          const data = await response.json();
+          
+          if (data.success && data.processedImage) {
+            const processedImageUrl = `data:image/jpeg;base64,${data.processedImage}`;
+            setProcessedUrl(processedImageUrl);
+            
+            const newItem: ProcessedImage = {
+              id: Date.now().toString(),
+              original: previewUrl,
+              processed: processedImageUrl,
+              processType: processType,
+              timestamp: new Date(),
+              filterType: filterType || undefined
+            };
+            
+            setHistory(prev => [newItem, ...prev]);
+            
+            clearInterval(progressInterval);
+            setProgress(100);
+            setIsProcessing(false);
+          } else {
+            clearInterval(progressInterval);
+            setProgress(0);
+            setIsProcessing(false);
+            alert(data.error || 'Не удалось обработать фото. Попробуйте другое изображение.');
+          }
+        } catch (err) {
+          clearInterval(progressInterval);
+          setProgress(0);
+          setIsProcessing(false);
+          alert('Ошибка при обработке фото. Проверьте подключение к интернету.');
         }
-        
-        clearInterval(progressInterval);
-        setProgress(100);
-        setIsProcessing(false);
       };
       
       reader.onerror = () => {

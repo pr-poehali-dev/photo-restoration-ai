@@ -61,7 +61,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
-                'body': json.dumps({'error': 'API token not configured'}),
+                'body': json.dumps({'error': 'API token not configured', 'success': False}),
+                'isBase64Encoded': False
+            }
+        
+        image_size = len(image_base64) * 3 / 4 / (1024 * 1024)
+        if image_size > 8:
+            return {
+                'statusCode': 400,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'error': 'Image too large. Max 8MB', 'success': False}),
                 'isBase64Encoded': False
             }
         
@@ -169,7 +181,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            'body': json.dumps({'error': 'Processing timeout'}),
+            'body': json.dumps({'error': 'Processing timeout. Try smaller image or retry later', 'success': False}),
             'isBase64Encoded': False
         }
         
@@ -180,6 +192,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            'body': json.dumps({'error': str(e)}),
+            'body': json.dumps({'error': f'Server error: {str(e)}', 'success': False}),
             'isBase64Encoded': False
         }
